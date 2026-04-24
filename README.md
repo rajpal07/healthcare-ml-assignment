@@ -380,6 +380,32 @@ conditions under which the model will fail, which is essential knowledge before 
 
 ---
 
+### Probability Calibration
+
+A well-calibrated model is one where a predicted probability of 0.7 means the event
+actually occurs ~70% of the time. Calibration matters in clinical deployment — a
+clinician reading "seizure probability: 85%" needs that number to be trustworthy.
+
+**Brier Score: 0.0115** (baseline: 0.1600) — **92.8% improvement over a no-skill classifier.**  
+The Brier Score measures mean squared error between predicted probabilities and true labels
+(lower = better; 0 = perfect; baseline = always predicting the class prior ~0.20).
+
+![Reliability Diagram — XGBoost](plot10_calibration.png)
+
+The reliability diagram plots mean predicted probability (x-axis) against actual fraction
+of positives (y-axis). The dashed diagonal = perfect calibration.
+
+Key observations:
+- **Extremes are well-calibrated** — predictions near 0.0 and 1.0 closely follow the diagonal,
+  meaning the model is confident and correct when it matters most
+- **Mid-range noise (0.2–0.7)** — zigzag pattern reflects thin bin counts; very few test
+  samples land in this intermediate zone because XGBoost pushes predictions toward the extremes
+- **Clinical implication** — for a binary seizure alarm the extremes are what count; a clinician
+  alert fires when probability > threshold (typically 0.5), and those high-confidence predictions
+  are reliably calibrated
+
+---
+
 
 ## Dataset
 
