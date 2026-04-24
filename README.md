@@ -10,8 +10,8 @@ SHAP interpretability, and probability calibration.
 ## Table of Contents
 
 1. [Problem Understanding](#1-problem-understanding)
-2. [Section 1 — CNN Overfitting Analysis](#2-section-1--cnn-overfitting-analysis)
-3. [Section 2 — Seizure Prediction Pipeline](#3-section-2--disease-prediction-pipeline)
+2. [Section 1: CNN Overfitting Analysis](#2-section-1--cnn-overfitting-analysis)
+3. [Section 2: Seizure Prediction Pipeline](#3-section-2--disease-prediction-pipeline)
 4. [Key Insights & Trade-offs](#4-key-insights--trade-offs)
 5. [Limitations & Next Steps](#5-limitations--next-steps)
 
@@ -22,7 +22,7 @@ SHAP interpretability, and probability calibration.
 ### Section 1: CNN Overfitting
 
 A CNN trained for cat/dog binary classification achieves **95% training accuracy
-and ~60% validation accuracy**. This is a textbook high-variance failure — the model
+and ~60% validation accuracy**. This is a textbook high-variance failure; the model
 has learned the training distribution nearly perfectly but fails to generalise.
 
 The goal is not just to fix this, but to understand **why** it happens, **how to diagnose**
@@ -35,18 +35,17 @@ whether a patient is currently having an active epileptic seizure.
 
 The clinical framing matters: **false negatives (missed seizures) carry far higher cost
 than false positives**. A missed seizure means a patient undergoes a dangerous neurological
-event — tonic-clonic convulsions, risk of injury, status epilepticus, or sudden unexplained
-death in epilepsy (SUDEP) — with no clinical intervention. A false alarm means a neurologist
+event (tonic-clonic convulsions, risk of injury, status epilepticus, or SUDEP) with no clinical intervention. A false alarm means a neurologist
 reviews a normal EEG segment. Every metric choice, imbalance correction, and threshold
 decision is made with this asymmetry in mind.
 
-**Dataset — Epileptic Seizure Recognition (University of Bonn, Germany):**
+**Dataset: Epileptic Seizure Recognition (University of Bonn, Germany)**
 500 real patients. Each row is exactly 1 second of EEG brain activity sampled at 178 Hz,
 giving 178 voltage measurements per row. The original 5-class labels are collapsed to binary:
 
 | Original Class | Description | Binary label |
 |---|---|---|
-| **1** | Active epileptic seizure — recorded directly from the seizure focus | **1 (positive)** |
+| **1** | Active epileptic seizure, recorded directly from the seizure focus | **1 (positive)** |
 | 2 | Seizure area, eyes closed | 0 (negative) |
 | 3 | Healthy area, eyes closed | 0 (negative) |
 | 4 | Eyes closed | 0 (negative) |
@@ -55,20 +54,20 @@ giving 178 voltage measurements per row. The original 5-class labels are collaps
 > Why this dataset over a standard tabular dataset (diabetes, heart disease)?  
 > EEG signals have precise, measurable physiological structure tied directly to seizure
 > neuroscience. Specific frequency bands (delta, theta, alpha, beta, gamma) have documented
-> clinical behaviour during seizures. Feature engineering is grounded in real biology —
-> and SHAP explanations are verifiable against established electrophysiology.
+> clinical behaviour during seizures. Feature engineering is grounded in real biology;
+> SHAP explanations are verifiable against established electrophysiology.
 
 ---
 
-## 2. Section 1 — CNN Overfitting Analysis
+## 2. Section 1: CNN Overfitting Analysis
 
 ### Root Cause: The Bias-Variance Lens
 
 A CNN trained for cat/dog binary classification achieves **95% training accuracy and ~60%
-validation accuracy**. This is a textbook **high-variance failure** — the model has learned
+validation accuracy**. This is a textbook **high-variance failure.** The model has learned
 the training distribution nearly perfectly but fails to generalise to unseen images.
 
-The 35-percentage-point gap is not a bug — it is a structural problem across three axes:
+The 35-percentage-point gap is not a bug; it is a structural problem across three axes:
 
 | Axis | Problem |
 |---|---|
@@ -80,25 +79,25 @@ The 35-percentage-point gap is not a bug — it is a structural problem across t
 
 ### How to Diagnose Overfitting
 
-1. **Train vs val loss curves** — validation loss initially decreases then rises while training loss keeps falling. The inflection point marks the onset of overfitting.
-2. **Generalisation gap** (`val_loss − train_loss`) — should stay small and bounded. A monotonically widening gap is the clearest overfitting signal.
-3. **Accuracy divergence** — val accuracy plateaus while training accuracy climbs toward 100%. A gap > 15 percentage points on a balanced dataset is a red flag.
-4. **Overconfident probabilities** — if the model's output probabilities cluster near 0 and 1 on training data but are diffuse on validation data, the model has learned to be maximally confident on seen examples only.
+1. **Train vs val loss curves:** validation loss initially decreases then rises while training loss keeps falling. The inflection point marks the onset of overfitting.
+2. **Generalisation gap** (`val_loss − train_loss`): should stay small and bounded. A monotonically widening gap is the clearest overfitting signal.
+3. **Accuracy divergence:** val accuracy plateaus while training accuracy climbs toward 100%. A gap > 15 percentage points on a balanced dataset is a red flag.
+4. **Overconfident probabilities:** if the model's output probabilities cluster near 0 and 1 on training data but are diffuse on validation data, the model has learned to be maximally confident on seen examples only.
 
 ---
 
 ### Before / After Comparison
 
-![CNN Training Curves — Baseline vs Regularised](plot_cnn_curves.png)
+![CNN Training Curves: Baseline vs Regularised](plot_cnn_curves.png)
 
 The figure shows four panels:
-- **Loss curves** — baseline val loss diverges while train loss collapses to near zero; regularised curves stay tightly bounded and converge together
-- **Accuracy curves** — baseline val accuracy plateaus at 60.1% while train accuracy reaches 95%; regularised closes the gap to 76.0% vs 79.5%
-- **Generalisation gap** (`val_loss − train_loss`) — baseline gap widens monotonically throughout training; regularised gap stays near zero and early stopping fires before it opens
-- **Summary panel** — per-fix attribution and final numbers side by side
+- **Loss curves:** baseline val loss diverges while train loss collapses to near zero; regularised curves stay tightly bounded and converge together
+- **Accuracy curves:** baseline val accuracy plateaus at 60.1% while train accuracy reaches 95%; regularised closes the gap to 76.0% vs 79.5%
+- **Generalisation gap** (`val_loss − train_loss`): baseline gap widens monotonically throughout training; regularised gap stays near zero and early stopping fires before it opens
+- **Summary panel:** per-fix attribution and final numbers side by side
 
 **Baseline (red):** train accuracy ≈ 95.0%, val accuracy ≈ 60.1%, loss gap = +0.311  
-**Regularised (blue):** train accuracy ≈ 79.5%, val accuracy ≈ 76.0%, loss gap = +0.018 — Early stopping at epoch 35
+**Regularised (blue):** train accuracy ≈ 79.5%, val accuracy ≈ 76.0%, loss gap = +0.018. Early stopping at epoch 35
 
 ---
 
@@ -123,7 +122,7 @@ The figure shows four panels:
 > | Train accuracy | 95.0% | 79.5% | −15.5 pp |
 > | **Val accuracy** | 60.1% | **76.0%** | **+15.9 pp** |
 > | Loss gap | 0.311 | 0.018 | −94% |
-> | Early stop | — | Epoch 35 | ✓ |
+> | Early stop | - | Epoch 35 | ✓ |
 >
 > Regularisation closed the generalisation gap from **35 pp → 3.5 pp** while
 > raising val accuracy by **+15.9 percentage points**.
@@ -152,20 +151,17 @@ The figure shows four panels:
 
 ---
 
-## 3. Section 2 — Disease Prediction Pipeline
+## 3. Section 2: Disease Prediction Pipeline
 
 ### Dataset
 
 **Epileptic Seizure Recognition (University of Bonn):** 11,500 rows × 178 EEG columns,
 zero null values, signal amplitude range −1,885 µV to +2,047 µV.
 
-> The 178 raw time steps per row are valid model inputs, but engineering domain features
-> makes the model interpretable to a clinician and typically improves tree model performance.
-> The engineering decisions here — leakage-free preprocessing, clinical metric selection,
-> probability calibration, SHAP attribution — are the same ones applied at scale in
-> production healthcare AI systems.
+> The 178 raw time steps are valid model inputs, but domain features make the model
+> interpretable to a clinician and typically improve tree model performance.
 
-#### EDA — Class Balance
+#### EDA: Class Balance
 
 ![Class Distribution](plot1_class_distribution.png)
 
@@ -174,7 +170,7 @@ real-world EEG monitoring where seizures are rare events. **Accuracy is a mislea
 here**  a model that always predicts "no seizure" achieves 80% accuracy while being
 clinically worthless. F2 and AUC-PR are used instead.
 
-#### EDA — Mean EEG Signal Profile
+#### EDA: Mean EEG Signal Profile
 
 ![Mean EEG Signal](plot2_mean_eeg_signal.png)
 
@@ -183,7 +179,7 @@ window. This is the hallmark of hypersynchronous neuronal firing  thousands of n
 discharging together produce large, irregular oscillations. The mean traces are similar;
 the **variance is the true discriminator** between classes.
 
-#### EDA — Individual EEG Traces
+#### EDA: Individual EEG Traces
 
 ![Individual EEG Traces](plot3_individual_eeg_traces.png)
 
@@ -192,7 +188,7 @@ extremes within milliseconds the tonic-clonic burst-firing pattern visible to an
 neurologist on paper EEG. Right column (non-seizure): comparatively flat, slow-varying
 signal. This contrast directly motivates features like variance, RMS, and gamma-band power.
 
-#### EDA — Signal Variance by Class
+#### EDA: Signal Variance by Class
 
 ![Variance Boxplot](plot4_variance_boxplot.png)
 
@@ -208,8 +204,8 @@ In seizure detection, the **cost of errors is asymmetric**:
 
 | Error | Clinical consequence |
 |---|---|
-| **False negative** (missed seizure) | Patient experiences a dangerous neurological event with no intervention — risk of injury, status epilepticus, or SUDEP |
-| **False positive** (false alarm) | Clinician reviews a normal EEG segment — an inconvenience, not a crisis |
+| **False negative** (missed seizure) | Patient experiences a dangerous neurological event with no intervention (risk of injury, status epilepticus, or SUDEP) |
+| **False positive** (false alarm) | Clinician reviews a normal EEG segment (an inconvenience, not a crisis) |
 
 This asymmetry drives every decision in the pipeline: metric selection, class imbalance
 correction, and threshold choice all prioritise minimising missed seizures over minimising false alarms.
@@ -220,7 +216,7 @@ correction, and threshold choice all prioritise minimising missed seizures over 
 
 | Priority | Metric | Rationale |
 |---|---|---|
-| 1st | **F2 Score** | Weights recall 2× over precision — directly encodes the seizure/non-seizure cost asymmetry |
+| 1st | **F2 Score** | Weights recall 2x over precision; directly encodes the seizure/non-seizure cost asymmetry |
 | 2nd | **AUC-ROC** | Threshold-agnostic ranking quality; robust to class imbalance |
 | 3rd | **AUC-PR** | Precision-recall tradeoff; more informative than ROC for imbalanced datasets |
 | Additional | F1, Brier | Balanced measure and probabilistic sharpness |
@@ -232,7 +228,7 @@ detection a missed seizure is far more dangerous than a false alarm.
 
 ### Feature Engineering
 
-20 interpretable domain features extracted per 1-second EEG window — 13 time-domain
+20 interpretable domain features per 1-second EEG window: 13 time-domain
 and 7 frequency-domain via real FFT (178 Hz sampling).
 
 **Time-domain features (13):**
@@ -242,10 +238,10 @@ and 7 frequency-domain via real FFT (178 Hz sampling).
 | `mean`, `std`, `variance` | Central tendency and spread of the signal |
 | `min`, `max`, `signal_range`, `peak_to_peak` | Amplitude extremes |
 | `skewness`, `kurtosis` | Shape and tail-heaviness of the amplitude distribution |
-| `rms` | Root mean square — total signal energy |
-| `zcr` | Zero-crossing rate — proxy for dominant frequency content |
+| `rms` | Root mean square (total signal energy) |
+| `zcr` | Zero-crossing rate (proxy for dominant frequency content) |
 | `mean_abs` | Mean absolute amplitude |
-| `mean_first_diff` | Average step between consecutive samples — signal roughness |
+| `mean_first_diff` | Average step between consecutive samples (signal roughness) |
 
 **Frequency-domain features (7):**
 
@@ -253,11 +249,11 @@ and 7 frequency-domain via real FFT (178 Hz sampling).
 |---|---|---|
 | `delta_power` | 0.5–4 Hz | Elevated in absence and complex-partial seizures |
 | `theta_power` | 4–8 Hz | Elevated in limbic/temporal-lobe ictal states |
-| `alpha_power` | 8–13 Hz | Suppressed at seizure onset — alpha-block phenomenon |
+| `alpha_power` | 8–13 Hz | Suppressed at seizure onset (alpha-block phenomenon) |
 | `beta_power` | 13–30 Hz | Hyperactivation is a tonic-clonic ictal marker |
 | `gamma_power` | 30–80 Hz | Hypersynchronous bursts precede and accompany seizure onset |
-| `dominant_freq` | — | Frequency bin carrying peak spectral power |
-| `spectral_entropy` | — | Low during seizure — signal locks into fewer rhythmic frequencies |
+| `dominant_freq` | - | Frequency bin carrying peak spectral power |
+| `spectral_entropy` | - | Low during seizure; signal locks into fewer rhythmic frequencies |
 
 ---
 
@@ -308,21 +304,21 @@ Epileptic Seizure Recognition.csv
 | Random Forest | 0.9981 | 0.9928 | 0.9565 | 0.9565 | 20 / 460 |
 | **XGBoost** ✓ | **0.9984** | **0.9946** | **0.9658** | **0.9758** | **8 / 460** |
 
-**Selected: XGBoost** — highest F2 (0.9758) and AUC-ROC (0.9984).  
-Confusion matrix: `[[1816, 24], [8, 452]]` — only **8 missed seizures** out of 460 seizure cases in the test set.
+**Selected: XGBoost** - highest F2 (0.9758) and AUC-ROC (0.9984).  
+Confusion matrix: `[[1816, 24], [8, 452]]` - only **8 missed seizures** out of 460 seizure cases in the test set.
 
 Best hyperparameters: `n_estimators=500, max_depth=7, learning_rate=0.05, subsample=1.0, colsample_bytree=1.0`  
-`scale_pos_weight=4.0` (negative:positive ratio in training set — corrects for 80/20 imbalance)
+`scale_pos_weight=4.0` (negative:positive ratio in training set; corrects for 80/20 imbalance)
 
-#### ROC Curves — All Models
+#### ROC Curves: All Models
 
 ![ROC Curves](plot5_roc_curves.png)
 
 All three models achieve AUC > 0.99. XGBoost leads at 0.9984. The engineered features are
-highly discriminative — the curves hug the top-left corner across the full threshold range,
+highly discriminative; the curves hug the top-left corner across the full threshold range,
 with a massive gap to the random baseline.
 
-#### Precision-Recall Curves — All Models
+#### Precision-Recall Curves: All Models
 
 ![PR Curves](plot6_pr_curves.png)
 
@@ -335,72 +331,66 @@ generating false alarms.
 
 ### SHAP Explainability
 
-SHAP (SHapley Additive exPlanations) decomposes each individual prediction into per-feature
-contributions grounded in cooperative game theory, providing exact attributions rather than
-heuristic approximations. For a clinical tool this is essential — **a black-box alarm that
-a neurologist cannot interrogate will not be trusted or adopted in practice.**
+SHAP breaks down each prediction into per-feature contributions. For a clinical tool this matters: a black-box alarm a neurologist cannot explain will not be trusted in practice.
 
-Key feature interpretations (direction derived from SHAP value vs feature value correlation):
+Key features (direction = SHAP value vs feature value):
 
 | Feature | Mean \|SHAP\| | Direction | Clinical alignment |
 |---|---|---|---|
-| `spectral_entropy` | Highest | ↑ → ↓ seizure probability | Seizure EEG loses spectral diversity as it locks into a narrow rhythm — low entropy = ictal signal |
+| `spectral_entropy` | Highest | ↑ → ↓ seizure probability | Seizure EEG loses spectral diversity as it locks into a narrow rhythm; low entropy = ictal signal |
 | `gamma_power` | Top 3 | ↑ → ↑ seizure probability | Hypersynchronous gamma bursts (30–80 Hz) are a hallmark of tonic-clonic onset |
 | `variance` / `rms` | Top 5 | ↑ → ↑ seizure probability | High-amplitude irregular waveforms from tonic-clonic firing raise both directly |
 | `mean_first_diff` | Top 5 | ↑ → ↑ seizure probability | Large step sizes between consecutive samples = rapid ictal oscillations |
 | `beta_power` | Top 6 | ↑ → ↑ seizure probability | Beta-band hyperactivation co-occurs with gamma at seizure onset |
 
-#### SHAP — Feature Importance (Mean |SHAP|)
+#### SHAP: Feature Importance (Mean |SHAP|)
 
 ![SHAP Bar Chart](plot8_shap_bar.png)
 
 `spectral_entropy` and `gamma_power` dominate, followed by variance-based features.
-These rankings are consistent with established epilepsy electrophysiology — the model
-has not learned spurious correlations, it has learned the actual physiological signal.
+These rankings match established epilepsy electrophysiology; the model learned the actual physiological signal.
 
-#### SHAP — Summary Beeswarm Plot
+#### SHAP: Summary Beeswarm Plot
 
 ![SHAP Beeswarm](plot7_shap_beeswarm.png)
 
 Each dot is one test-set prediction. **Red = high feature value, Blue = low feature value.**
 Horizontal position = impact on seizure prediction (right = pushes toward seizure).  
-High `spectral_entropy` (red, far left) pushes strongly *away* from seizure — a complex,
+High `spectral_entropy` (red, far left) pushes strongly *away* from seizure; a complex,
 disordered signal is not a seizure. High `gamma_power` (red, far right) pushes strongly
-*toward* seizure — confirming gamma hyperactivation as a reliable ictal marker.
+*toward* seizure, confirming gamma hyperactivation as a reliable ictal marker.
 
-#### SHAP — Waterfall for a Missed Seizure (False Negative)
+#### SHAP: Waterfall for a Missed Seizure (False Negative)
 
-![SHAP Waterfall — False Negative](plot9_shap_waterfall_fn.png)
+![SHAP Waterfall: False Negative](plot9_shap_waterfall_fn.png)
 
 This shows the single 1-second window where the model predicted "no seizure" but a seizure
-was occurring. Features that looked atypical in this window — lower gamma power, higher
-spectral entropy than a textbook ictal burst — pushed the prediction toward non-seizure.
-This is **clinically valuable diagnostic information**: it identifies the precise physiological
-conditions under which the model will fail, which is essential knowledge before any deployment.
+was occurring. Features that looked atypical in this window (lower gamma power, higher spectral entropy than a typical ictal burst) pushed the prediction toward non-seizure.
+This shows the exact conditions where the model fails.
 
 ---
 
 ### Probability Calibration
 
 A well-calibrated model is one where a predicted probability of 0.7 means the event
-actually occurs ~70% of the time. Calibration matters in clinical deployment — a
+actually occurs ~70% of the time. Calibration matters in clinical deployment; a
 clinician reading "seizure probability: 85%" needs that number to be trustworthy.
 
-**Brier Score: 0.0115** (baseline: 0.1600) — **92.8% improvement over a no-skill classifier.**  
+**Brier Score: 0.0115** (baseline: 0.1600) - **92.8% improvement over a no-skill classifier.**  
 The Brier Score measures mean squared error between predicted probabilities and true labels
 (lower = better; 0 = perfect; baseline = always predicting the class prior ~0.20).
 
-![Reliability Diagram — XGBoost](plot10_calibration.png)
+![Reliability Diagram: XGBoost](plot10_calibration.png)
 
 The reliability diagram plots mean predicted probability (x-axis) against actual fraction
 of positives (y-axis). The dashed diagonal = perfect calibration.
 
 Key observations:
-- **Extremes are well-calibrated** — predictions near 0.0 and 1.0 closely follow the diagonal,
+- **Extremes are well-calibrated:** predictions near 0.0 and 1.0 closely follow the diagonal,
   meaning the model is confident and correct when it matters most
-- **Mid-range noise (0.2–0.7)** — zigzag pattern reflects thin bin counts; very few test
+- **Mid-range noise (0.2–0.7):** zigzag pattern reflects thin bin counts; very few test
   samples land in this intermediate zone because XGBoost pushes predictions toward the extremes
-- **Clinical implication** — for a binary seizure alarm the extremes are what count; a clinician
+- **Clinical implication:** for a binary seizure alarm the extremes are what count; a clinician
   alert fires when probability > threshold (typically 0.5), and those high-confidence predictions
   are reliably calibrated
 
@@ -410,7 +400,7 @@ Key observations:
 ## Dataset
 
 Not included due to size. Download from:  
-[Epileptic Seizure Recognition — Kaggle](https://www.kaggle.com/datasets/harunshimanto/epileptic-seizure-recognition)
+[Epileptic Seizure Recognition (Kaggle)](https://www.kaggle.com/datasets/harunshimanto/epileptic-seizure-recognition)
 
 Place as `Epileptic Seizure Recognition.csv` in the same directory as the notebook.
 
