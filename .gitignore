@@ -1,0 +1,25 @@
+# Dataset (too large for git)
+Epileptic Seizure Recognition.csv
+archive.zip
+
+# Temp base64 files
+b64_*.txt
+
+# OMC state
+.omc/
+
+# Duplicate notebook
+Copy_of_epilepsy_seizure_detection.ipynb
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
