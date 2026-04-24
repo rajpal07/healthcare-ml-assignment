@@ -116,7 +116,7 @@ The figure shows four panels:
 
 ---
 
-> **📊 Result at a Glance**
+> **Result at a Glance**
 >
 > | | Baseline | Regularised | Δ |
 > |---|---|---|---|
